@@ -8,6 +8,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 
+MAX_DEGREE = 180
+
 
 def getGradientX(image):
     """
@@ -56,23 +58,43 @@ def getOrientation(gradientX, gradientY):
     return np.arctan2(gradientY, gradientX) * 180 / np.pi % 180
 
 
-def createHistogramFromMagnitudeAndOrientation(magnitude, orientation):
+def createHistogramFromMagnitudeAndOrientation(magnitude, orientation, bins):
+    # print(magnitude)
+    # print(orientation)
 
-    pass
+    bin_size = MAX_DEGREE // bins
+    bin_array = np.zeros(bins)
+    for y in range(orientation.shape[0]):
+        for x in range(orientation.shape[1]):
+            current_orientation = orientation[y, x]
+            current_magnitude = magnitude[y, x]
+            # Interpolate magnitude over neighbor bins
+            former_bin = int(current_orientation // bin_size)
+            latter_bin = former_bin + 1
+            weight_of_former_bin = 1 + former_bin - current_orientation / bin_size
+            weight_of_latter_bin = 1 - weight_of_former_bin
+
+            # print(current_orientation, former_bin, weight_of_former_bin)
+            bin_array[former_bin % bins] += current_magnitude * weight_of_former_bin
+            bin_array[latter_bin % bins] += current_magnitude * weight_of_latter_bin
+    return bin_array
 
 
-
-def extractHogFromImage(image, filter_width, filter_height, stride):
+def extractHogFromImage(image, filter_width, filter_height, stride, bins):
     gradient_x = getGradientX(image)
     gradient_y = getGradientY(image)
     magnitude = getMagnitude(gradient_x, gradient_y)
     orientation = getOrientation(gradient_x, gradient_y)
 
-    plt.imshow(magnitude, cmap="gray")
-    plt.show()
-    plt.imshow(orientation, cmap="gray")
-    plt.show()
+    # plt.imshow(magnitude, cmap="gray")
+    # plt.show()
+    # plt.imshow(orientation, cmap="gray")
+    # plt.show()
 
-    for y in range(0, image.shape[0] - filter_width, step=stride):
-        for x in range(0, image.shape[1] - filter_height, step=stride):
-            pass
+    for y in range(0, image.shape[0] - filter_width, stride):
+        for x in range(0, image.shape[1] - filter_height, stride):
+            bin_array = createHistogramFromMagnitudeAndOrientation(magnitude[y:y + filter_width, x:x + filter_height],
+                                                                   orientation[y:y + filter_width, x:x + filter_height],
+                                                                   bins)
+
+            print(bin_array)
