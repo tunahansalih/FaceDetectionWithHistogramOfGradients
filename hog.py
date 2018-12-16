@@ -9,16 +9,29 @@ import matplotlib.pyplot as plt
 import cv2
 
 
+def getGradientX(image):
+    gradient_x = np.zeros_like(image)
+    gradient_x[:, 1:-1] = -image[:, :-2] + image[:, 2:]
+    gradient_x[:, 0] = -image[:, 0] + image[:, 1]
+    gradient_x[:, -1] = -image[:, -2] + image[:, -1]
+
+    return gradient_x
+
+
+def getGradientY(image):
+    gradient_y = np.zeros_like(image)
+    gradient_y[1:-1, :] = image[:-2, :] - image[2:, :]
+    gradient_y[0, :] = image[0, :] - image[1, :]
+    gradient_y[-1, :] = image[-2, :] - image[-1, :]
+
+    return gradient_y
+
+
 def extractHoggFromImage(image, filter_width, filter_height, stride):
-    kernely = np.array([[1, 1, 1], [0, 0, 0], [-1, -1, -1]])
-    kernelx = np.array([[1, 0, -1], [1, 0, -1], [1, 0, -1]])
-    edges_x = cv2.filter2D(image, -1, kernelx)
-    edges_y = cv2.filter2D(image, -1, kernely)
 
-    plt.imshow(edges_x, cmap='gray')
+    gradient_x = getGradientX(image)
+    gradient_y = getGradientY(image)
+    plt.imshow(gradient_x, cmap='gray')
     plt.show()
-    plt.imshow(edges_y, cmap='gray')
+    plt.imshow(gradient_y, cmap='gray')
     plt.show()
-
-
-
