@@ -24,4 +24,4 @@ VALIDATION_IMAGES_FILENAMES = os.listdir(VALIDATION_IMAGES_DIRNAME)
 random_test_image = cv2.imread(os.path.join(FACE_IMAGES_DIRNAME, FACE_IMAGES_FILENAMES[0]), cv2.IMREAD_GRAYSCALE)
 random_test_image = random_test_image / 255.0
 
-hog.extractHogFromImage(random_test_image, filter_height=6, filter_width=6, stride=1, bins=9)
+hog.extractHogFromImage(random_test_image, filter_height=8, filter_width=8, stride=4, bins=9)

@@ -58,12 +58,16 @@ def getOrientation(gradientX, gradientY):
     return np.arctan2(gradientY, gradientX) * 180 / np.pi % 180
 
 
+def normalizeBlock(block):
+    return block
+
+
 def createHistogramFromMagnitudeAndOrientation(magnitude, orientation, bins):
     # print(magnitude)
     # print(orientation)
 
     bin_size = MAX_DEGREE // bins
-    bin_array = np.zeros(bins)
+    cell_histogram = np.zeros(bins)
     for y in range(orientation.shape[0]):
         for x in range(orientation.shape[1]):
             current_orientation = orientation[y, x]
@@ -75,9 +79,9 @@ def createHistogramFromMagnitudeAndOrientation(magnitude, orientation, bins):
             weight_of_latter_bin = 1 - weight_of_former_bin
 
             # print(current_orientation, former_bin, weight_of_former_bin)
-            bin_array[former_bin % bins] += current_magnitude * weight_of_former_bin
-            bin_array[latter_bin % bins] += current_magnitude * weight_of_latter_bin
-    return bin_array
+            cell_histogram[former_bin % bins] += current_magnitude * weight_of_former_bin
+            cell_histogram[latter_bin % bins] += current_magnitude * weight_of_latter_bin
+    return cell_histogram
 
 
 def extractHogFromImage(image, filter_width, filter_height, stride, bins):
@@ -86,15 +90,35 @@ def extractHogFromImage(image, filter_width, filter_height, stride, bins):
     magnitude = getMagnitude(gradient_x, gradient_y)
     orientation = getOrientation(gradient_x, gradient_y)
 
+    normalized_cells = []
     # plt.imshow(magnitude, cmap="gray")
     # plt.show()
     # plt.imshow(orientation, cmap="gray")
     # plt.show()
+    cells = [[[] for _ in range((image.shape[0] - filter_height) // stride)] for _ in
+             range((image.shape[1] - filter_width) // stride)]
 
-    for y in range(0, image.shape[0] - filter_width, stride):
-        for x in range(0, image.shape[1] - filter_height, stride):
-            bin_array = createHistogramFromMagnitudeAndOrientation(magnitude[y:y + filter_width, x:x + filter_height],
-                                                                   orientation[y:y + filter_width, x:x + filter_height],
-                                                                   bins)
+    cell_y = 0
+    for y in range(0, image.shape[0] - filter_height, stride):
+        cell_x = 0
+        for x in range(0, image.shape[1] - filter_width, stride):
+            print(y, x, cell_y, cell_x)
+            cell_histogram = createHistogramFromMagnitudeAndOrientation(
+                magnitude[y:y + filter_height, x:x + filter_width],
+                orientation[y:y + filter_height, x:x + filter_width],
+                bins)
+            cells[cell_y][cell_x] = cell_histogram
+            cell_x += 1
+        cell_y += 1
 
-            print(bin_array)
+    for y in range(len(cells) - 1):
+        for x in range(len(cells[0]) - 1):
+            blocks = [cells[y][x], cells[y + 1][x], cells[y][x + 1], cells[y + 1][x + 1]]
+            normalized_block = normalizeBlock(blocks)
+            normalized_cells.extend(normalized_block)
+
+    return []
+
+
+def extractFromRandomCrop(image, filter_width, filter_height, stride, bins):
+    pass
