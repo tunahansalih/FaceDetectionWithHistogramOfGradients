@@ -59,6 +59,8 @@ def getOrientation(gradientX, gradientY):
 
 
 def normalizeBlock(block):
+    sum_of_block = np.sum([np.sum(cell) for cell in block])
+    block = [[value / sum_of_block for value in cell] for cell in block]
     return block
 
 
@@ -84,24 +86,19 @@ def createHistogramFromMagnitudeAndOrientation(magnitude, orientation, bins):
     return cell_histogram
 
 
-def extractHogFromImage(image, filter_width, filter_height, stride, bins):
+def getCellHistograms(image, filter_width, filter_height, stride, bins):
     gradient_x = getGradientX(image)
     gradient_y = getGradientY(image)
     magnitude = getMagnitude(gradient_x, gradient_y)
     orientation = getOrientation(gradient_x, gradient_y)
 
-    normalized_cells = []
-    # plt.imshow(magnitude, cmap="gray")
-    # plt.show()
-    # plt.imshow(orientation, cmap="gray")
-    # plt.show()
-    cells = [[[] for _ in range((image.shape[0] - filter_height) // stride)] for _ in
-             range((image.shape[1] - filter_width) // stride)]
+    cells = [[[] for _ in range((image.shape[0] - filter_height) // stride + 1)] for _ in
+             range((image.shape[1] - filter_width) // stride + 1)]
 
     cell_y = 0
-    for y in range(0, image.shape[0] - filter_height, stride):
+    for y in range(0, image.shape[0] - filter_height + 1, stride):
         cell_x = 0
-        for x in range(0, image.shape[1] - filter_width, stride):
+        for x in range(0, image.shape[1] - filter_width + 1, stride):
             print(y, x, cell_y, cell_x)
             cell_histogram = createHistogramFromMagnitudeAndOrientation(
                 magnitude[y:y + filter_height, x:x + filter_width],
@@ -111,13 +108,25 @@ def extractHogFromImage(image, filter_width, filter_height, stride, bins):
             cell_x += 1
         cell_y += 1
 
-    for y in range(len(cells) - 1):
-        for x in range(len(cells[0]) - 1):
-            blocks = [cells[y][x], cells[y + 1][x], cells[y][x + 1], cells[y + 1][x + 1]]
+    return cells
+
+
+def getNormalizedCells(cell_histograms, block_size):
+    normalized_cells = []
+    for y in range(len(cell_histograms) - block_size + 1):
+        for x in range(len(cell_histograms[0]) - block_size + 1):
+            blocks = [cell_histograms[y + i][x + j] for i in range(block_size) for j in range(block_size)]
             normalized_block = normalizeBlock(blocks)
             normalized_cells.extend(normalized_block)
 
-    return []
+    return normalized_cells
+
+
+def extractHogFromImage(image, filter_width, filter_height, stride, bins, block_size):
+    cell_histograms = getCellHistograms(image, filter_width, filter_height, stride, bins)
+    normalized_cells = getNormalizedCells(cell_histograms, block_size)
+
+    return normalized_cells
 
 
 def extractFromRandomCrop(image, filter_width, filter_height, stride, bins):
